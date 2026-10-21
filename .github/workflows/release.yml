@@ -1,0 +1,170 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing release tag to upload the build to (e.g. v0.1.0)"
+        required: false
+        type: string
+
+# A release workflow needs to write to the repository's releases; nothing else.
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+
+jobs:
+  build-windows:
+    name: Build Windows installer and publish release
+    runs-on: windows-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+        with:
+          toolchain: stable
+          components: rustfmt, clippy
+
+      - name: Cache Cargo build artifacts
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            src-tauri/target
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: cargo-${{ runner.os }}-${{ hashFiles('src-tauri/Cargo.lock') }}
+          restore-keys: |
+            cargo-${{ runner.os }}-
+
+      - name: Install frontend dependencies from the lockfile
+        run: npm ci
+
+      - name: Resolve release tag
+        id: tag
+        shell: pwsh
+        run: |
+          $tag = "${{ inputs.tag }}".Trim()
+          if (-not $tag) {
+            $version = node -p "require('./package.json').version"
+            $tag = "v$version"
+          }
+          if ($tag -notmatch '^v\d+\.\d+\.\d+') {
+            throw "Invalid release tag '$tag'. Expected a semantic version tag such as v0.1.0."
+          }
+          "tag=$tag" >> $env:GITHUB_OUTPUT
+          Write-Host "Release tag: $tag"
+
+      - name: Verify the tag matches the application version
+        shell: pwsh
+        run: |
+          $app = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          $tauri = (Get-Content src-tauri/tauri.conf.json -Raw | ConvertFrom-Json).version
+          $cargo = (Select-String -Path src-tauri/Cargo.toml -Pattern '^version = "([^"]+)"' | Select-Object -First 1).Matches[0].Groups[1].Value
+          $expected = "${{ steps.tag.outputs.tag }}".TrimStart('v')
+          Write-Host "package.json=$app tauri.conf.json=$tauri Cargo.toml=$cargo tag=$expected"
+          if ($app -ne $tauri -or $tauri -ne $cargo -or $cargo -ne $expected) {
+            throw "Version mismatch: the tag must match the application version ($app)."
+          }
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Frontend tests
+        run: npm test
+
+      - name: Check Rust formatting
+        working-directory: src-tauri
+        run: cargo fmt --check
+
+      - name: Clippy
+        working-directory: src-tauri
+        run: cargo clippy --all-targets -- -D warnings
+
+      - name: Rust tests
+        working-directory: src-tauri
+        run: cargo test
+
+      - name: Build the production application
+        run: npm run tauri:build
+
+      - name: Locate and checksum the release artifacts
+        id: artifacts
+        shell: pwsh
+        run: |
+          $bundle = "src-tauri/target/release/bundle"
+          if (-not (Test-Path $bundle)) {
+            throw "No bundle directory was produced at $bundle. The Tauri build did not run."
+          }
+          $installers = @(Get-ChildItem -Path $bundle -Recurse -File -Include *.exe,*.msi |
+            Where-Object { $_.Name -notlike "*-uninstall.exe" })
+          if ($installers.Count -eq 0) {
+            throw "No Windows installer (.exe/.msi) was found under $bundle. Failing instead of publishing an empty release."
+          }
+          $stage = Join-Path $env:RUNNER_TEMP "stockcraft-release"
+          New-Item -ItemType Directory -Force -Path $stage | Out-Null
+          $published = @()
+          foreach ($file in $installers) {
+            Copy-Item $file.FullName -Destination $stage -Force
+            $published += $file.Name
+            Write-Host "Installer: $($file.Name) ($($file.Length) bytes)"
+          }
+          # Checksum every published file.
+          $hashes = Get-ChildItem $stage -File | ForEach-Object {
+            $h = (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower()
+            "$h  $($_.Name)"
+          }
+          $hashFile = Join-Path $stage "SHA256SUMS.txt"
+          Set-Content -Path $hashFile -Value $hashes -Encoding utf8
+          Write-Host "--- SHA256SUMS.txt ---"
+          Get-Content $hashFile
+          "stage=$stage" >> $env:GITHUB_OUTPUT
+          "assets=$($published -join ',')" >> $env:GITHUB_OUTPUT
+
+      - name: Upload the build output to the workflow run
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: stockcraft-windows-installer
+          path: ${{ steps.artifacts.outputs.stage }}
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish the assets to the GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          $stage = "${{ steps.artifacts.outputs.stage }}"
+          $files = @(Get-ChildItem $stage -File | ForEach-Object { $_.FullName })
+          if ($files.Count -eq 0) { throw "No files staged for upload." }
+          # If the release already exists, attach to it instead of creating a second one.
+          $existing = $false
+          gh release view $env:TAG *> $null
+          if ($LASTEXITCODE -eq 0) {
+            $existing = $true
+            Write-Host "Release $env:TAG already exists - uploading assets to it."
+            gh release upload $env:TAG @files --clobber
+          } else {
+            Write-Host "Release $env:TAG does not exist yet - creating it."
+            gh release create $env:TAG @files --title "Stockcraft $env:TAG" --generate-notes
+          }
+          Write-Host "--- published assets ---"
+          gh release view $env:TAG --json assets --jq '.assets[] | "\(.name) \(.size) bytes"'
