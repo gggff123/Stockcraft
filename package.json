@@ -1,0 +1,26 @@
+{
+  "name": "stockcraft",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Stockcraft - multi-source free image discovery desktop app",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "preview": "vite preview",
+    "icons": "node scripts/make-icons.mjs",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build"
+  },
+  "devDependencies": {
+    "@tauri-apps/api": "^2.9.0",
+    "@tauri-apps/cli": "^2.9.0",
+    "jsdom": "^26.1.0",
+    "typescript": "^5.9.2",
+    "vite": "^7.1.5",
+    "vitest": "^3.2.4"
+  }
+}

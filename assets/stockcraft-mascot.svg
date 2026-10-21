@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="240" height="240" role="img" aria-label="Stockcraft mascot: a cross-hatched ink gorilla holding a photograph">
+  <title>Stockcraft gorilla mascot</title>
+  <desc>An original ink-drawn gorilla with cross-hatched shading, holding a framed photograph on a Stockcraft blue badge.</desc>
+  <defs>
+    <linearGradient id="sc-blue" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2b5ce6"/>
+      <stop offset="0.55" stop-color="#1a45c4"/>
+      <stop offset="1" stop-color="#0b1f57"/>
+    </linearGradient>
+    <pattern id="sc-hatch" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(38)">
+      <line x1="0" y1="0" x2="0" y2="5" stroke="#0b1220" stroke-width="1.05" opacity="0.72"/>
+    </pattern>
+    <pattern id="sc-hatch-light" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(-36)">
+      <line x1="0" y1="0" x2="0" y2="4" stroke="#0b1220" stroke-width="0.8" opacity="0.45"/>
+    </pattern>
+    <path id="sc-shoulders" d="M36 216c3-36 18-60 44-70l14-6h52l14 6c26 10 41 34 44 70z"/>
+    <path id="sc-head" d="M120 36c41 0 68 28 68 68 0 34-15 57-34 68-21 12-47 12-68 0-19-11-34-34-34-68 0-40 27-68 68-68z"/>
+    <path id="sc-muzzle" d="M82 133c9-12 67-12 76 0 7 10 1 33-38 33s-45-23-38-33z"/>
+  </defs>
+
+  <rect width="240" height="240" rx="52" fill="url(#sc-blue)"/>
+  <g opacity="0.22" stroke="#cfe0ff" stroke-width="1.4" fill="none">
+    <path d="M22 186c18 16 36 24 54 26"/>
+    <path d="M12 150c10 8 20 13 30 15"/>
+    <path d="M206 70c6 5 11 11 15 18"/>
+    <path d="M188 44c8 4 15 9 21 16"/>
+  </g>
+
+  <g>
+    <use href="#sc-shoulders" fill="#f2f6ff" stroke="#0b1220" stroke-width="3" stroke-linejoin="round"/>
+    <use href="#sc-shoulders" fill="url(#sc-hatch-light)"/>
+    <use href="#sc-shoulders" fill="none" stroke="#0b1220" stroke-width="3" stroke-linejoin="round"/>
+
+    <circle cx="59" cy="104" r="19" fill="#f2f6ff" stroke="#0b1220" stroke-width="3"/>
+    <circle cx="59" cy="104" r="9" fill="url(#sc-hatch)"/>
+    <circle cx="181" cy="104" r="19" fill="#f2f6ff" stroke="#0b1220" stroke-width="3"/>
+    <circle cx="181" cy="104" r="9" fill="url(#sc-hatch)"/>
+
+    <use href="#sc-head" fill="#f2f6ff" stroke="#0b1220" stroke-width="3.2" stroke-linejoin="round"/>
+    <use href="#sc-head" fill="none" stroke="#0b1220" stroke-width="3.2"/>
+
+    <path d="M84 91c20-13 52-13 72 0" fill="none" stroke="#0b1220" stroke-width="4.4" stroke-linecap="round"/>
+    <path d="M88 95c16-7 26-8 40-8" fill="none" stroke="url(#sc-hatch)" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="101" cy="108" r="5.2" fill="#0b1220"/>
+    <circle cx="139" cy="108" r="5.2" fill="#0b1220"/>
+    <circle cx="102.8" cy="106.2" r="1.5" fill="#f2f6ff"/>
+    <circle cx="140.8" cy="106.2" r="1.5" fill="#f2f6ff"/>
+
+    <use href="#sc-muzzle" fill="#f2f6ff" stroke="#0b1220" stroke-width="2.6"/>
+    <use href="#sc-muzzle" fill="url(#sc-hatch)" opacity="0.55"/>
+    <use href="#sc-muzzle" fill="none" stroke="#0b1220" stroke-width="2.6"/>
+    <ellipse cx="120" cy="141" rx="9.5" ry="5.4" fill="#0b1220"/>
+    <path d="M107 156c6 5 20 5 26 0" fill="none" stroke="#0b1220" stroke-width="2.6" stroke-linecap="round"/>
+
+    <g transform="translate(40 148) rotate(-8)">
+      <rect x="3" y="4" width="88" height="64" rx="7" fill="#0b1220" opacity="0.28"/>
+      <rect width="88" height="64" rx="7" fill="#f8fbff" stroke="#0b1220" stroke-width="3"/>
+      <rect x="7" y="7" width="74" height="50" rx="3" fill="#1a45c4"/>
+      <circle cx="64" cy="21" r="6.5" fill="#f0a413"/>
+      <path d="M7 57l21-24 13 13 9-9 24 20z" fill="#e9f0ff" opacity="0.92"/>
+      <path d="M7 57l21-24 13 13 9-9 24 20" fill="none" stroke="#0b1220" stroke-width="1.4" opacity="0.5"/>
+    </g>
+
+    <path d="M126 152c7 6 17 8 27 6" fill="none" stroke="#0b1220" stroke-width="3" stroke-linecap="round"/>
+    <ellipse cx="156" cy="188" rx="23" ry="14" fill="#f2f6ff" stroke="#0b1220" stroke-width="3" transform="rotate(-14 156 188)"/>
+    <path d="M141 184c5-3 11-3 16 0M145 191c4-2 8-2 12 0" fill="none" stroke="url(#sc-hatch)" stroke-width="3" stroke-linecap="round"/>
+    <ellipse cx="84" cy="200" rx="22" ry="13" fill="#f2f6ff" stroke="#0b1220" stroke-width="3" transform="rotate(10 84 200)"/>
+    <path d="M72 198c5-2 10-2 15 0M76 204c4-2 8-2 11 0" fill="none" stroke="url(#sc-hatch)" stroke-width="3" stroke-linecap="round"/>
+
+    <path d="M96 210c14 6 34 6 48 0" fill="none" stroke="#0b1220" stroke-width="2.2" opacity="0.5"/>
+  </g>
+</svg>

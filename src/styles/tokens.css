@@ -1,0 +1,130 @@
+/* Stockcraft design tokens — single source of truth for colour, type, spacing and motion. */
+
+:root {
+  /* Brand: Stockcraft blue */
+  --brand-50: #eaf0ff;
+  --brand-100: #d6e2ff;
+  --brand-200: #b3c9ff;
+  --brand-300: #85a7ff;
+  --brand-400: #5580ff;
+  --brand-500: #2b5ce6;
+  --brand-600: #1a45c4;
+  --brand-700: #14369b;
+  --brand-800: #102b78;
+  --brand-900: #0b1f57;
+
+  /* Ink (mascot / typography) */
+  --ink-900: #070d1a;
+  --ink-800: #0d1526;
+  --ink-700: #1b2740;
+  --ink-600: #33415e;
+  --ink-500: #55627c;
+  --ink-400: #7f8ba3;
+  --ink-300: #aeb8cb;
+  --ink-200: #d3dae6;
+  --ink-100: #e9edf5;
+  --ink-50: #f5f7fb;
+
+  --accent-500: #f0a413;
+  --danger-500: #d92d20;
+  --danger-600: #b42318;
+  --success-500: #12a150;
+  --warning-500: #d97706;
+
+  /* Type scale */
+  --font-sans: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, "Inter",
+    "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "Cascadia Mono", "Consolas", ui-monospace, SFMono-Regular, monospace;
+  --fs-2xs: 10.5px;
+  --fs-xs: 11.5px;
+  --fs-sm: 12.5px;
+  --fs-md: 13.5px;
+  --fs-lg: 15px;
+  --fs-xl: 18px;
+  --fs-2xl: 22px;
+  --fs-3xl: 28px;
+  --lh-tight: 1.2;
+  --lh-normal: 1.45;
+
+  /* Spacing */
+  --sp-1: 4px;
+  --sp-2: 6px;
+  --sp-3: 8px;
+  --sp-4: 12px;
+  --sp-5: 16px;
+  --sp-6: 20px;
+  --sp-7: 28px;
+  --sp-8: 40px;
+
+  --radius-sm: 6px;
+  --radius-md: 9px;
+  --radius-lg: 14px;
+  --radius-pill: 999px;
+
+  --shadow-1: 0 1px 2px rgba(9, 16, 32, 0.08), 0 1px 3px rgba(9, 16, 32, 0.06);
+  --shadow-2: 0 6px 18px rgba(9, 16, 32, 0.12);
+  --shadow-3: 0 18px 48px rgba(6, 12, 26, 0.28);
+
+  --header-h: 58px;
+  --toolbar-h: 46px;
+  --sidebar-w: 244px;
+  --card-min: 232px;
+
+  --dur-fast: 110ms;
+  --dur-med: 190ms;
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+
+  --focus-ring: 0 0 0 3px color-mix(in srgb, var(--brand-400) 45%, transparent);
+}
+
+html[data-theme="light"] {
+  --bg: var(--ink-50);
+  --bg-grid: #e7ebf3;
+  --surface: #ffffff;
+  --surface-2: #f2f5fa;
+  --surface-3: #e8edf6;
+  --border: #dde3ee;
+  --border-strong: #c6cfdf;
+  --text: var(--ink-900);
+  --text-dim: var(--ink-500);
+  --text-muted: var(--ink-400);
+  --brand: var(--brand-600);
+  --brand-hover: var(--brand-700);
+  --brand-soft: var(--brand-50);
+  --on-brand: #ffffff;
+  --skel-a: #e9edf4;
+  --skel-b: #f6f8fc;
+  --overlay: rgba(11, 20, 40, 0.55);
+}
+
+html[data-theme="dark"] {
+  --bg: #070c18;
+  --bg-grid: #0b1220;
+  --surface: #0e1728;
+  --surface-2: #131e33;
+  --surface-3: #1a2740;
+  --border: #202e48;
+  --border-strong: #2d3d5c;
+  --text: #e9effb;
+  --text-dim: #9fb0cd;
+  --text-muted: #7c8bab;
+  --brand: var(--brand-400);
+  --brand-hover: var(--brand-300);
+  --brand-soft: #14243f;
+  --on-brand: #06122b;
+  --skel-a: #16213a;
+  --skel-b: #1d2b47;
+  --overlay: rgba(3, 7, 16, 0.68);
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-2: 0 8px 22px rgba(0, 0, 0, 0.55);
+  --shadow-3: 0 20px 52px rgba(0, 0, 0, 0.65);
+}
+
+html[data-density="cozy"] { --card-min: 246px; }
+html[data-density="standard"] { --card-min: 208px; }
+html[data-density="dense"] { --card-min: 164px; }
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --dur-fast: 0ms; --dur-med: 0ms; }
+}
+html[data-motion="reduced"] * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }

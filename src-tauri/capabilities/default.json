@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Permissions required by the Stockcraft main window: core events and window basics only. All networking, filesystem and database access goes through Rust commands.",
+  "windows": ["main"],
+  "permissions": ["core:default"]
+}
