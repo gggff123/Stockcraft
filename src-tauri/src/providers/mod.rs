@@ -3,15 +3,19 @@
 //! Every adapter talks to a documented public API only. The trait keeps provider-specific JSON out
 //! of the search orchestrator; the registry owns one instance of each adapter.
 
+pub mod aihorde;
 pub mod cleveland;
 pub mod freepik;
 pub mod health;
 pub mod http;
+pub mod met;
 pub mod nasa;
 pub mod openverse;
 pub mod pexels;
 pub mod pixabay;
 pub mod rate_limit;
+pub mod smk;
+pub mod wellcome;
 pub mod wikimedia;
 
 use std::sync::Arc;
@@ -73,6 +77,10 @@ impl ProviderRegistry {
                 Arc::new(pexels::PexelsProvider),
                 Arc::new(pixabay::PixabayProvider),
                 Arc::new(freepik::FreepikProvider),
+                Arc::new(wellcome::WellcomeProvider),
+                Arc::new(smk::SmkProvider),
+                Arc::new(met::MetProvider),
+                Arc::new(aihorde::AiHordeProvider),
             ],
         }
     }

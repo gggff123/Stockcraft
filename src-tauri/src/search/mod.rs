@@ -465,10 +465,12 @@ impl SearchService {
                 self.health.record_success(provider.id());
                 // Pixabay's API terms require responses to be cached for 24 hours. That rule wins
                 // over the user's global TTL, including when metadata caching is otherwise disabled.
-                let ttl_minutes = if provider.id() == "pixabay" {
-                    24 * 60
-                } else {
-                    settings.metadata_cache_minutes
+                // AI Horde produces a unique result for every trigger, so caching it can only hide
+                // fresh images behind a stale entry.
+                let ttl_minutes = match provider.id() {
+                    "pixabay" => 24 * 60,
+                    "aihorde" => 0,
+                    _ => settings.metadata_cache_minutes,
                 };
                 if ttl_minutes > 0 {
                     if let Err(error) =

@@ -205,4 +205,18 @@ describe("thumbnail proxy URLs", () => {
     );
     expect(thumbUrl(asset())).toBe("");
   });
+
+  it("never proxies inline data or blob URLs", () => {
+    state.thumbnailBase = "http://thumb.localhost";
+    const inline = asset({
+      thumbnailUrl: "data:image/webp;base64,UklGRg==",
+      previewUrl: "data:image/webp;base64,UklGRg==",
+    });
+    expect(thumbUrl(inline)).toBe("data:image/webp;base64,UklGRg==");
+    expect(previewUrl(inline)).toBe("data:image/webp;base64,UklGRg==");
+    expect(thumbUrl(asset({ thumbnailUrl: "blob:http://localhost/abc" }))).toBe(
+      "blob:http://localhost/abc",
+    );
+    state.thumbnailBase = "";
+  });
 });

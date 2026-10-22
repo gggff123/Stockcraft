@@ -34,7 +34,7 @@ server** — everything except the provider API calls happens on your machine.
   **before** they use it.
 - Anyone who prefers a desktop app that works on their own machine over a web app that profiles them.
 
-**In one sentence:** one search box, four free image sources, full licence and attribution metadata,
+**In one sentence:** one search box, seven free image sources, full licence and attribution metadata,
 and downloads that write a provenance record next to the file.
 
 ---
@@ -85,7 +85,7 @@ as working.
 - **Sorting**: relevance (provider order, untouched), newest, and largest — the latter two are
   applied locally.
 - **13 category entries** in the sidebar. *Vectors* is deliberately disabled and marked `n/a`, because
-  none of the four anonymous default providers offers vector search.
+  none of the anonymous default providers offers vector search.
 
 ### Preview, licence and attribution
 
@@ -214,7 +214,7 @@ described in step 2, and download only from the official
 | **One source is missing results** | Openverse has a tight anonymous budget (20 requests/minute burst, 200/day). The app spaces requests, caches responses and opens a circuit on `429`. Wait, or add a key for one of the optional providers. |
 | **Thumbnails do not appear** | Remote thumbnails are fetched through a local caching proxy. Check **Settings → Cache & storage** and try **Clear thumbnails**. A corporate proxy or firewall that blocks the provider domains will also block thumbnails. |
 | **The installer cannot run** | Download the file again (a truncated download fails the hash check) and try **Run as administrator**. |
-| **Downloads fail immediately** | Stockcraft only downloads over http(s) from URLs the provider publishes, and requires an `image/*` content type. Some providers publish previews only; those results are shown as view-only and cannot be downloaded. |
+| **Downloads fail immediately** | Stockcraft only downloads over http(s) from URLs the provider publishes (plus the inline images AI Horde returns), and requires an `image/*` content type. Some providers publish previews only; those results are shown as view-only and cannot be downloaded. |
 
 ---
 
@@ -232,6 +232,22 @@ the codebase.
 | **Wikimedia Commons** | MediaWiki Action API (`commons.wikimedia.org/w/api.php`) | Per-file licence from each file's `extmetadata` | <https://www.mediawiki.org/wiki/API:Search> · <https://foundation.wikimedia.org/wiki/Policy:Terms_of_Use> |
 | **NASA Image Library** | Public JSON API (`images-api.nasa.gov`) | NASA media usage guidelines — mostly public domain, **not all** | <https://images.nasa.gov/docs/images.nasa.gov_api_docs.pdf> · <https://www.nasa.gov/nasa-brand-center/images-and-media/> |
 | **Cleveland Museum of Art** | Open Access API (`openaccess-api.clevelandart.org`) | CC0 for open-access works; otherwise copyrighted | <https://openaccess-api.clevelandart.org/> · <https://www.clevelandart.org/open-access> |
+| **Wellcome Collection** | Catalogue API (`api.wellcomecollection.org/catalogue/v2/images`) | Public Domain Mark, CC0 or CC BY; in-copyright images are preview-only | <https://developers.wellcomecollection.org/> · <https://wellcomecollection.org/pages/YB1ZaREAACQAu5qg> |
+| **SMK — Statens Museum for Kunst** | Open API (`api.smk.dk/api/v1`) | Public Domain Mark / CC0 when `public_domain` is true; otherwise see the record | <https://api.smk.dk/api/v1/docs/> · <https://www.smk.dk/en/legal/> |
+| **The Metropolitan Museum of Art** | Collection API (`collectionapi.metmuseum.org/public/collection/v1.1`) | CC0 for public-domain works; otherwise see the record | <https://metmuseum.github.io/> · <https://www.metmuseum.org/about-the-met/policies-and-documents/open-access> |
+
+### AI Horde — on-demand generation (anonymous)
+
+| Provider | Behaviour | Rate limit | Docs |
+|---|---|---|---|
+| **AI Horde** | Generates **two 512 px images on every tenth search** (not a keyword search) and returns them inline in the same grid | **1 generation per minute**, documented anonymous key `0000000000`, 45 s queue timeout | <https://aihorde.net/api/> |
+
+AI Horde is a *generation* provider, not a search source: it ignores pagination, submits a small
+censored job (`nsfw: false`, `censor_nsfw: true`) with **no account**, and returns the finished images
+as `data:` URLs. If the shared queue is busy for more than 45 s the provider returns no images rather
+than failing the search. Generated images can be downloaded like any other result; their licence is
+the model's, so check it before reuse. Disable the source in **Settings → Sources & policy** if you do
+not want generated images mixed into search results.
 
 ### Optional sources — require your own API key, disabled by default
 
@@ -299,6 +315,7 @@ Stockcraft is local-first. There is **no account, no analytics, no telemetry, an
 - **Your search query** is sent to the providers you have enabled, and to nothing else. The
   **Settings → Privacy** panel lists exactly which enabled sources receive it.
 - **Thumbnail and download requests** go directly to the provider domains that published the image.
+  Images generated by AI Horde are already in memory and are never re-uploaded anywhere.
 - If you configure an optional API key, that key is sent to that provider's API as an authentication
   header — and to no one else.
 
@@ -578,11 +595,11 @@ Honest list of what is **not** working or not finished:
   supplied, so their real-world behaviour is unverified. An unauthenticated probe of the Pixabay
   endpoint returns HTTP 400 (missing key) and the Magnific endpoint returns HTTP 401 (missing key).
 - **Freepik / Magnific's `filters[ids]` detail lookup** is untested live.
-- **The metadata cache TTL is a single global value**, not per provider — with the documented
-  exception that Pixabay is forced to 24 hours.
+- **The metadata cache TTL is a single global value**, not per provider — with two documented
+  exceptions: Pixabay is forced to 24 hours and AI Horde is never cached.
 - **Colour filtering is exact provider-data matching**, not thumbnail analysis. Assets without
   published colour data are hidden while a colour filter is active.
-- **The vector category is disabled** (`n/a`) because none of the four anonymous default providers
+- **The vector category is disabled** (`n/a`) because none of the anonymous default providers
   offers vector search.
 - **Cross-provider duplicate detection is fixture-tested only** — it has not been observed with a
   real duplicate image.

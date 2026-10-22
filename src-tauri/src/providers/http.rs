@@ -6,7 +6,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use reqwest::header::{ACCEPT, AUTHORIZATION, RETRY_AFTER};
-use reqwest::{Client, StatusCode};
+use reqwest::{Client, Method, StatusCode};
 use serde_json::Value;
 use tokio::sync::Mutex;
 
@@ -91,6 +91,36 @@ impl HttpClient {
                 None,
             ))),
         );
+        limits.insert(
+            "wellcome",
+            Arc::new(Mutex::new(RateLimiter::new(
+                Duration::from_millis(1_000),
+                None,
+            ))),
+        );
+        limits.insert(
+            "smk",
+            Arc::new(Mutex::new(RateLimiter::new(
+                Duration::from_millis(1_000),
+                None,
+            ))),
+        );
+        // The Met needs one request per object, so a short interval keeps an object page
+        // responsive while staying well inside the museum's published guidance.
+        limits.insert(
+            "met",
+            Arc::new(Mutex::new(RateLimiter::new(
+                Duration::from_millis(120),
+                None,
+            ))),
+        );
+        limits.insert(
+            "aihorde",
+            Arc::new(Mutex::new(RateLimiter::new(
+                Duration::from_millis(1_000),
+                None,
+            ))),
+        );
         Ok(Self {
             client,
             limits: Arc::new(limits),
@@ -126,7 +156,8 @@ impl HttpClient {
     }
 
     pub async fn get_json(&self, url: &str, authorization: Option<&str>) -> AppResult<Value> {
-        self.get_json_inner(url, authorization, None).await
+        self.send_json(Method::GET, url, None, authorization, None)
+            .await
     }
 
     /// Some providers use a custom authentication header instead of `Authorization`.
@@ -136,24 +167,48 @@ impl HttpClient {
         header: &str,
         value: &str,
     ) -> AppResult<Value> {
-        self.get_json_inner(url, None, Some((header, value))).await
+        self.send_json(Method::GET, url, None, None, Some((header, value)))
+            .await
     }
 
-    async fn get_json_inner(
+    /// JSON `POST`, used by providers whose search is a job submission (e.g. AI Horde).
+    pub async fn post_json_with_header(
         &self,
         url: &str,
+        body: &Value,
+        header: &str,
+        value: &str,
+    ) -> AppResult<Value> {
+        self.send_json(Method::POST, url, Some(body), None, Some((header, value)))
+            .await
+    }
+
+    async fn send_json(
+        &self,
+        method: Method,
+        url: &str,
+        body: Option<&Value>,
         authorization: Option<&str>,
         extra_header: Option<(&str, &str)>,
     ) -> AppResult<Value> {
         let url = crate::util::validate_remote_url(url)?.to_string();
+        // A POST here submits a job (AI Horde), so a retry could create a second job. Only GETs are
+        // retried; a failed submission is handled by the caller.
+        let attempts = if method == Method::POST { 1 } else { 3 };
         let mut last_error = AppError::Unavailable("request failed".into());
-        for attempt in 0..3u32 {
-            let mut request = self.client.get(&url).header(ACCEPT, "application/json");
+        for attempt in 0..attempts {
+            let mut request = self
+                .client
+                .request(method.clone(), &url)
+                .header(ACCEPT, "application/json");
             if let Some(token) = authorization {
                 request = request.header(AUTHORIZATION, token);
             }
             if let Some((name, value)) = extra_header {
                 request = request.header(name, value);
+            }
+            if let Some(body) = body {
+                request = request.json(body);
             }
             match request.send().await {
                 Ok(response) => {
@@ -188,9 +243,10 @@ impl HttpClient {
                             )));
                         }
                         StatusCode::NOT_FOUND => {
-                            return Err(AppError::NotFound(format!(
-                                "provider returned 404 for {url}"
-                            )));
+                            // Never echo the request URL: keyed providers put secrets in the query.
+                            return Err(AppError::NotFound(
+                                "provider returned 404 for this resource".into(),
+                            ));
                         }
                         StatusCode::BAD_REQUEST => {
                             return Err(AppError::Unavailable(format!(
@@ -220,7 +276,7 @@ impl HttpClient {
                     }
                 }
             }
-            if attempt < 2 {
+            if attempt + 1 < attempts {
                 let jitter = (std::time::SystemTime::now()
                     .duration_since(std::time::UNIX_EPOCH)
                     .map(|d| d.subsec_millis())
