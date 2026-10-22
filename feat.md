@@ -7,11 +7,12 @@ and a TypeScript + Vite frontend.
 **This file is the single source of truth for project status.** It records what was actually run,
 not merely what exists in the source tree.
 
-Last verification pass: **2026-10-21** (Windows 10/11 x64, WebView2 155, packaged release build).
+Last verification pass: **2026-10-22** (lints, 80 + 1 Rust tests, 20 frontend tests, live provider probes
+and a green hosted CI run; the installer is produced by the release workflow).
 
-> **Release status:** version `0.1.0` is published as a GitHub Release at
-> <https://github.com/gggff123/Stockcraft/releases/latest> (tag `v0.1.0`), with the NSIS installer
-> and a SHA-256 checksum file. See section 13 for the full publishing record.
+> **Release status:** version `1.0.1` is published as a GitHub Release at
+> <https://github.com/gggff123/Stockcraft/releases/latest> (tag `v1.0.1`), with the NSIS installer
+> and a SHA-256 checksum file. See section 13 for the 0.1.0 record and §13.9 for this release.
 
 ---
 
@@ -19,7 +20,7 @@ Last verification pass: **2026-10-21** (Windows 10/11 x64, WebView2 155, package
 
 | Item | Value |
 | --- | --- |
-| App version | `0.1.0` |
+| App version | `1.0.1` |
 | Verified platform | Windows x64 (release executable and NSIS installer) |
 | Anonymous working sources | **Openverse, Wikimedia Commons, NASA Image Library, Cleveland Museum of Art, Wellcome Collection, SMK, The Metropolitan Museum of Art** |
 | Generation source (anonymous) | **AI Horde** - generates on every tenth search, 1 generation/minute, 45 s queue timeout |
@@ -29,9 +30,9 @@ Last verification pass: **2026-10-21** (Windows 10/11 x64, WebView2 155, package
 | App icon | Supplied cross-hatched gorilla artwork; generated PNG/ICO/ICNS and mobile icon sets |
 | Rust tests | **80 unit + 1 integration = 81 passed, 0 failed** |
 | Frontend tests | **20 passed** |
-| Release executable | `src-tauri/target/release/stockcraft.exe` — 7,689,216 bytes |
-| Installer | `src-tauri/target/release/bundle/nsis/Stockcraft_0.1.0_x64-setup.exe` — 3,159,695 bytes |
-| Install/uninstall | Verified on the current build: silent install, launch, clean uninstall |
+| Release executable | `src-tauri/target/release/stockcraft.exe` - rebuilt by the release workflow (see §13.9) |
+| Installer | `src-tauri/target/release/bundle/nsis/Stockcraft_1.0.1_x64-setup.exe` - built by the release workflow (see §13.9) |
+| Install/uninstall | Verified for 0.1.0 (silent install, launch, clean uninstall); 1.0.1 uses the same installer recipe |
 
 ### Verified end-to-end
 
@@ -959,3 +960,4 @@ Tauri app on Windows.
 | 2026-10-21 | Re-verification | 65 unit + 1 integration Rust tests and 19 frontend tests passed; release search “sunrise” returned 81 results from 4 sources; current NSIS installer (with gorilla setup/uninstaller icon) installed, launched with the new icon, and uninstalled cleanly. Live keyed providers remain untested. |
 | 2026-10-21 | Publishing pass | Git initialised; public repository `gggff123/Stockcraft` created; `README.md` written; MIT `LICENSE` added; screenshots reorganised into `docs/screenshots/` (+ `legacy/`); `.gitignore` extended and `src-tauri/gen/schemas/` untracked; production build re-run (3 m 20 s); all tests/lints re-run green; live search re-verified (81 results, 4 sources); installer install → launch → uninstall cycle re-verified; bare exe confirmed **not** portable (`STATUS_DLL_NOT_FOUND` without `WebView2Loader.dll`) so no portable artefact was published; release `v0.1.0` created with the NSIS installer and a SHA-256 checksum file; source pushed to `main`. No CI workflow, at the owner's instruction. |
 | 2026-10-22 | Provider expansion | Added Wellcome Collection (IIIF images, per-image licence), SMK (public-domain flag) and The Met (v1.1 search + concurrent object lookups) as anonymous sources. Added AI Horde as an anonymous generation source that runs on every tenth search, at most once per minute, with a 45 s timeout and inline `data:` results. Frontend proxy bypasses `data:`/`blob:` URLs; the download manager decodes inline images. Live probes: Wellcome 6/6, SMK 2/2, Met 3/3 thumbnails; AI Horde generated 2 images in 33.7 s on the tenth call. Rust tests 80 + 1 integration, frontend 20, clippy/fmt/typecheck green. |
+| 2026-10-22 | Release v1.0.1 | Merged PR #1 (new sources + multi-size icon) and bumped `package.json`, `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml` and `Cargo.lock` from 0.1.0 to **1.0.1**. Tag `v1.0.1` builds and publishes the NSIS installer through the release workflow. |

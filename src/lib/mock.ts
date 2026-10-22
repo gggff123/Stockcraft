@@ -674,7 +674,7 @@ export async function mockCall<T>(command: string, args?: Record<string, unknown
 
     case "get_diagnostics":
       return {
-        appVersion: "0.1.0-browser-preview",
+        appVersion: "1.0.1-browser-preview",
         os: "browser",
         arch: "web",
         dataDir: "(browser preview)",

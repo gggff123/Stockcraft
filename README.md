@@ -154,14 +154,14 @@ From the [latest release page](https://github.com/gggff123/Stockcraft/releases/l
 
 | Asset | What it is |
 |---|---|
-| `Stockcraft_0.1.0_x64-setup.exe` | The **NSIS installer**. This is the supported way to install Stockcraft. |
-| `Stockcraft_0.1.0_x64-setup.exe.sha256` | SHA-256 checksum of the installer, for verifying the download. |
+| `Stockcraft_1.0.1_x64-setup.exe` | The **NSIS installer**. This is the supported way to install Stockcraft. |
+| `Stockcraft_1.0.1_x64-setup.exe.sha256` | SHA-256 checksum of the installer, for verifying the download. |
 
 ### 2. Verify the download (recommended)
 
 ```powershell
 # PowerShell
-Get-FileHash .\Stockcraft_0.1.0_x64-setup.exe -Algorithm SHA256
+Get-FileHash .\Stockcraft_1.0.1_x64-setup.exe -Algorithm SHA256
 ```
 
 Compare the printed hash with the one in the `.sha256` file. They must match exactly. The same hash is
@@ -169,7 +169,7 @@ printed in the release notes.
 
 ### 3. Install
 
-1. Double-click `Stockcraft_0.1.0_x64-setup.exe`.
+1. Double-click `Stockcraft_1.0.1_x64-setup.exe`.
 2. If Windows shows a **"Windows protected your PC"** or **"Unknown publisher"** warning, click
    **More info** → **Run anyway**. See [Unsigned installers](#unsigned-installers-and-smart-screen)
    below for why this happens.
@@ -390,7 +390,7 @@ npm run tauri:build
 This runs `tsc --noEmit && vite build` and then produces:
 
 - `src-tauri/target/release/stockcraft.exe` — the release executable
-- `src-tauri/target/release/bundle/nsis/Stockcraft_0.1.0_x64-setup.exe` — the NSIS installer
+- `src-tauri/target/release/bundle/nsis/Stockcraft_1.0.1_x64-setup.exe` — the NSIS installer
 
 ### Run the tests
 
@@ -637,13 +637,13 @@ cd ..
 npm run tauri:build
 
 # 3. Locate and checksum the artefacts
-$installer = "src-tauri\target\release\bundle\nsis\Stockcraft_0.1.0_x64-setup.exe"
+$installer = "src-tauri\target\release\bundle\nsis\Stockcraft_1.0.1_x64-setup.exe"
 Get-FileHash $installer -Algorithm SHA256
 
 # 4. Create the tag and the release
-git tag -a v0.1.0 -m "Stockcraft 0.1.0"
+git tag -a v1.0.1 -m "Stockcraft 1.0.1"
 git push origin main --tags
-gh release create v0.1.0 $installer "$installer.sha256" --title "Stockcraft 0.1.0" --notes-file notes.md
+gh release create v1.0.1 $installer "$installer.sha256" --title "Stockcraft 1.0.1" --notes-file notes.md
 ```
 
 The version is kept in sync in four places: `package.json`, `src-tauri/Cargo.toml`,

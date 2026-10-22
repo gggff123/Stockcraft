@@ -240,7 +240,7 @@ export function renderSettingsPanel(): void {
             <div class="card">
               <dl class="meta-grid">
                 <dt>Version</dt>
-                <dd>${diagnostics?.appVersion ?? "0.1.0"}</dd>
+                <dd>${diagnostics?.appVersion ?? "unknown"}</dd>
                 <dt>Platform</dt>
                 <dd>${diagnostics ? `${diagnostics.os} ${diagnostics.arch}` : "unknown"}</dd>
                 <dt>Data folder</dt>

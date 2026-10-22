@@ -1,6 +1,6 @@
 [package]
 name = "stockcraft"
-version = "0.1.0"
+version = "1.0.1"
 description = "Stockcraft — multi-source free image discovery desktop app"
 authors = ["Stockcraft"]
 edition = "2021"
