@@ -382,6 +382,10 @@ impl Default for AppSettings {
                 "wikimedia".into(),
                 "nasa".into(),
                 "cleveland".into(),
+                "wellcome".into(),
+                "smk".into(),
+                "met".into(),
+                "aihorde".into(),
             ],
             cache_thumbnails: true,
             thumbnail_cache_mb: 256,
@@ -458,6 +462,8 @@ mod tests {
         let s = AppSettings::default();
         assert_eq!(s.results_per_page, 24);
         assert!(s.enabled_providers.contains(&"openverse".to_string()));
+        assert!(s.enabled_providers.contains(&"aihorde".to_string()));
+        assert!(s.enabled_providers.contains(&"met".to_string()));
         assert!(!s.enabled_providers.contains(&"pexels".to_string()));
         assert!(s.thumbnail_cache_mb >= 64);
     }

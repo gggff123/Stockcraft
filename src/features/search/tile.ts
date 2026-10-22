@@ -5,6 +5,14 @@ import type { Asset } from "../../lib/types";
 import { iconButton } from "../../components/ui";
 
 /**
+ * Inline images (AI Horde returns base64 `data:` URLs) are already in memory, so they must bypass
+ * the thumbnail proxy — the proxy only fetches remote http(s) URLs.
+ */
+function isInlineUrl(source: string): boolean {
+  return source.startsWith("data:") || source.startsWith("blob:");
+}
+
+/**
  * Resolves the display URL for an asset thumbnail.
  *
  * In the desktop app thumbnails are fetched through the Rust `thumb://` scheme, which caches bytes
@@ -14,14 +22,14 @@ import { iconButton } from "../../components/ui";
 export function thumbUrl(asset: Asset): string {
   const source = asset.thumbnailUrl ?? asset.previewUrl ?? "";
   if (!source) return "";
-  if (!state.thumbnailBase) return source;
+  if (isInlineUrl(source) || !state.thumbnailBase) return source;
   return `${state.thumbnailBase}/fetch?u=${encodeURIComponent(source)}`;
 }
 
 export function previewUrl(asset: Asset): string {
   const source = asset.previewUrl ?? asset.thumbnailUrl ?? "";
   if (!source) return "";
-  if (!state.thumbnailBase) return source;
+  if (isInlineUrl(source) || !state.thumbnailBase) return source;
   return `${state.thumbnailBase}/fetch?u=${encodeURIComponent(source)}`;
 }
 

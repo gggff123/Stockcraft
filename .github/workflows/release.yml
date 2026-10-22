@@ -37,11 +37,25 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Set up Rust
+      # Match the toolchain the project is verified against; on MSVC the shared
+      # resource archive is linked twice and CVTRES rejects the duplicate.
+      - name: Set up Rust (GNU toolchain)
         uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
         with:
-          toolchain: stable
+          toolchain: stable-x86_64-pc-windows-gnu
           components: rustfmt, clippy
+
+      - name: Put MinGW-w64 on PATH
+        shell: pwsh
+        run: |
+          foreach ($dir in @('C:\mingw64\bin', 'C:\msys64\mingw64\bin')) {
+            if (Test-Path (Join-Path $dir 'x86_64-w64-mingw32-gcc.exe')) {
+              Add-Content -Path $env:GITHUB_PATH -Value $dir
+              Write-Host "Using MinGW from $dir"
+              return
+            }
+          }
+          throw 'No MinGW-w64 toolchain found on the runner.'
 
       - name: Cache Cargo build artifacts
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -50,9 +64,9 @@ jobs:
             src-tauri/target
             ~/.cargo/registry
             ~/.cargo/git
-          key: cargo-${{ runner.os }}-${{ hashFiles('src-tauri/Cargo.lock') }}
+          key: cargo-${{ runner.os }}-gnu-${{ hashFiles('src-tauri/Cargo.lock') }}
           restore-keys: |
-            cargo-${{ runner.os }}-
+            cargo-${{ runner.os }}-gnu-
 
       - name: Install frontend dependencies from the lockfile
         run: npm ci

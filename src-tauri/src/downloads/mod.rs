@@ -6,6 +6,7 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, RwLock};
 use std::time::{Duration, Instant};
 
+use base64::Engine as _;
 use futures_util::StreamExt;
 use tauri::{AppHandle, Emitter};
 use tokio::io::AsyncWriteExt;
@@ -47,7 +48,10 @@ impl DownloadManager {
         let url = asset.download_url.clone().ok_or_else(|| {
             AppError::Policy("this source does not publish a permitted download URL".into())
         })?;
-        validate_remote_url(&url)?;
+        // Generated images (AI Horde) arrive as inline base64 data URLs rather than a remote host.
+        if !url.starts_with("data:") {
+            validate_remote_url(&url)?;
+        }
         if !asset.download_allowed {
             return Err(AppError::Policy(
                 "this image is not marked as downloadable by its source".into(),
@@ -72,9 +76,18 @@ impl DownloadManager {
             planned
         };
         let attribution = asset.attribution.clone();
+        // Keep inline base64 out of the downloads table; it is only useful for the transient asset.
+        let mut record = asset.clone();
+        if record
+            .thumbnail_url
+            .as_deref()
+            .is_some_and(|url| url.starts_with("data:"))
+        {
+            record.thumbnail_url = None;
+        }
         let id =
             self.db
-                .insert_download(asset, &planned.to_string_lossy(), attribution.as_deref())?;
+                .insert_download(&record, &planned.to_string_lossy(), attribution.as_deref())?;
 
         let token = CancellationToken::new();
         {
@@ -230,6 +243,9 @@ impl DownloadTask {
         if self.token.is_cancelled() {
             return Err(DownloadError::Cancelled { bytes: 0 });
         }
+        if let Some(inline) = url.strip_prefix("data:") {
+            return self.transfer_inline(inline).await;
+        }
         let response = self.client.get(&url).send().await.map_err(|error| {
             DownloadError::Failed(AppError::Network(format!(
                 "download request failed: {error}"
@@ -368,6 +384,48 @@ impl DownloadTask {
         Ok((final_path, received))
     }
 
+    /// Write an inline `data:` image (AI Horde) without touching the network.
+    async fn transfer_inline(&self, inline: &str) -> Result<(PathBuf, u64), DownloadError> {
+        let (mime, bytes) = decode_inline_image(inline).map_err(DownloadError::Failed)?;
+        if bytes.len() as u64 > MAX_DOWNLOAD_BYTES {
+            return Err(DownloadError::Failed(AppError::Malformed(
+                "file is larger than the 200 MB download limit".into(),
+            )));
+        }
+        let parent = self.planned.parent().unwrap_or_else(|| Path::new("."));
+        let extension = extension_for(Some(&mime), "");
+        let mut final_path = self.planned.clone();
+        if final_path
+            .extension()
+            .and_then(|ext| ext.to_str())
+            .map(|ext| ext.eq_ignore_ascii_case(&extension))
+            != Some(true)
+        {
+            let stem = final_path
+                .file_stem()
+                .map(|stem| stem.to_string_lossy().to_string())
+                .unwrap_or_else(|| safe_stem(&self.asset.provider_asset_id));
+            let candidate = parent.join(format!("{stem}.{extension}"));
+            final_path = if self.settings.confirm_overwrite {
+                unique_path(&candidate)
+            } else {
+                candidate
+            };
+        }
+        if self.token.is_cancelled() {
+            return Err(DownloadError::Cancelled { bytes: 0 });
+        }
+        if final_path.exists() && !self.settings.confirm_overwrite {
+            let _ = std::fs::remove_file(&final_path);
+        }
+        tokio::fs::write(&final_path, &bytes)
+            .await
+            .map_err(|error| {
+                DownloadError::Failed(AppError::Io(format!("could not write file: {error}")))
+            })?;
+        Ok((final_path, bytes.len() as u64))
+    }
+
     fn emit(
         &self,
         received: u64,
@@ -394,6 +452,36 @@ impl DownloadTask {
 enum DownloadError {
     Cancelled { bytes: u64 },
     Failed(AppError),
+}
+
+/// Decode the `data:` payload of a generated image, returning its MIME type and bytes.
+fn decode_inline_image(inline: &str) -> AppResult<(String, Vec<u8>)> {
+    let (meta, payload) = inline
+        .split_once(',')
+        .ok_or_else(|| AppError::Malformed("inline image data has no comma separator".into()))?;
+    if !meta.to_ascii_lowercase().contains(";base64") {
+        return Err(AppError::Malformed(
+            "inline image data is not base64 encoded".into(),
+        ));
+    }
+    let mime = meta
+        .split(';')
+        .next()
+        .unwrap_or("")
+        .trim()
+        .to_ascii_lowercase();
+    if !mime.starts_with("image/") {
+        return Err(AppError::Malformed(format!(
+            "inline data is {mime:?}, not an image"
+        )));
+    }
+    let bytes = base64::engine::general_purpose::STANDARD
+        .decode(payload.trim())
+        .map_err(|_| AppError::Malformed("inline image data could not be decoded".into()))?;
+    if bytes.is_empty() {
+        return Err(AppError::Malformed("inline image is empty".into()));
+    }
+    Ok((mime, bytes))
 }
 
 fn write_sidecars(asset: &Asset, path: &Path) -> AppResult<()> {
@@ -512,5 +600,16 @@ mod tests {
         let stem = safe_stem("CON");
         assert_eq!(stem, "CON-image");
         assert!(!stem.contains('/'));
+    }
+
+    #[test]
+    fn decodes_inline_generated_images() {
+        let (mime, bytes) = decode_inline_image("image/webp;base64,UklGRg==").unwrap();
+        assert_eq!(mime, "image/webp");
+        assert_eq!(&bytes[..4], b"RIFF");
+        assert!(decode_inline_image("image/png;base64,not base64!").is_err());
+        assert!(decode_inline_image("text/plain;base64,aGk=").is_err());
+        assert!(decode_inline_image("image/png;base64,").is_err());
+        assert!(decode_inline_image("image/png;base64").is_err());
     }
 }

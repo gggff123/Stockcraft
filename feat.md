@@ -21,13 +21,14 @@ Last verification pass: **2026-10-21** (Windows 10/11 x64, WebView2 155, package
 | --- | --- |
 | App version | `0.1.0` |
 | Verified platform | Windows x64 (release executable and NSIS installer) |
-| Anonymous working sources | **Openverse, Wikimedia Commons, NASA Image Library, Cleveland Museum of Art** |
-| Optional keyed sources | **Pexels official API; Pixabay official API; Freepik / Magnific Resources API (preview-only)** — disabled by default, no live keys tested |
+| Anonymous working sources | **Openverse, Wikimedia Commons, NASA Image Library, Cleveland Museum of Art, Wellcome Collection, SMK, The Metropolitan Museum of Art** |
+| Generation source (anonymous) | **AI Horde** - generates on every tenth search, 1 generation/minute, 45 s queue timeout |
+| Optional keyed sources | **Pexels official API; Pixabay official API; Freepik / Magnific Resources API (preview-only)** - disabled by default, no live keys tested |
 | Excluded sources | **Pexels public pages, Freepik public pages, Google Images** (provider `robots.txt`/API restrictions) |
-| Removed source | **Art Institute of Chicago** (IIIF previews blocked by Cloudflare) |
+| Removed source | **Art Institute of Chicago** (IIIF previews blocked by Cloudflare; Wellcome Collection used instead) |
 | App icon | Supplied cross-hatched gorilla artwork; generated PNG/ICO/ICNS and mobile icon sets |
-| Rust tests | **65 unit + 1 integration = 66 passed, 0 failed** |
-| Frontend tests | **19 passed** |
+| Rust tests | **80 unit + 1 integration = 81 passed, 0 failed** |
+| Frontend tests | **20 passed** |
 | Release executable | `src-tauri/target/release/stockcraft.exe` — 7,689,216 bytes |
 | Installer | `src-tauri/target/release/bundle/nsis/Stockcraft_0.1.0_x64-setup.exe` — 3,159,695 bytes |
 | Install/uninstall | Verified on the current build: silent install, launch, clean uninstall |
@@ -76,7 +77,8 @@ Rules honoured here:
 
 ## 2. Provider inventory & policy verification
 
-Verification date: **2026-10-21**. Requests used a descriptive User-Agent
+Verification dates: **2026-10-21** (original sources) and **2026-10-22** (Wellcome Collection, SMK,
+The Met, AI Horde). Requests used a descriptive User-Agent
 (`Stockcraft/0.1 (+image discovery desktop app)`). All core providers are public, documented APIs;
 no website or search-results page is scraped.
 
@@ -92,8 +94,11 @@ no website or search-results page is scraped.
 | **Freepik / Magnific — Resources API** | `https://api.magnific.com/v1/resources` | No — key required | Freemium or premium Freepik licence | `[-]` | Optional **preview-only** adapter; fixture/key/licence tests, no live key tested |
 | **Freepik — public pages** | HTML scraping | n/a | Freepik licence | `[!]` | Excluded: `robots.txt` disallows `/search?`, `/*/search?` and download paths |
 | **Google Images** | HTML scraping | n/a | Varies by result | `[!]` | Excluded: `robots.txt` disallows `/search` and `/imgres`; Custom Search API is closed |
+| **Wellcome Collection** | `https://api.wellcomecollection.org/catalogue/v2/images` | Yes | `license.id` per image (`pdm`, `cc0`, `cc-by`, `inc`) | `[x]` | Live search "sunrise" returned 6 images with working IIIF thumbnails; in-copyright preview-only |
+| **SMK — Statens Museum for Kunst** | `https://api.smk.dk/api/v1/art/search/` | Yes | `public_domain` + `rights` | `[x]` | Live search "sunrise" returned 2 public-domain artworks with working thumbnails |
+| **The Metropolitan Museum of Art** | `https://collectionapi.metmuseum.org/public/collection/v1.1/search` | Yes | CC0 where `isPublicDomain` | `[x]` | Live search "sunrise" returned 3 of 130 objects, each fetched from `/objects/{id}` |
+| **AI Horde** | `https://stablehorde.net/api/v2/generate/*` | Yes — documented anonymous key | AI-generated; model licence applies | `[x]` | Live probe: searches 1-9 returned nothing, search 10 generated 2 images in 33.7 s |
 | **Art Institute of Chicago** | API + IIIF | Yes | `is_public_domain` | `[!]` | Removed: IIIF previews returned Cloudflare 403 |
-| **Metropolitan Museum of Art** | `collectionapi.metmuseum.org` | Yes | CC0 where `isPublicDomain` | `[ ]` | Anonymous access investigated; adapter not implemented |
 | Unsplash / Flickr / Smithsonian / Rijksmuseum / Europeana | Varies | Mostly no | Varies | `[ ]` | Require API keys and/or OAuth; not implemented |
 
 ### 2.1 Pexels decision (recorded 2026-10-21)
@@ -186,7 +191,69 @@ live key was supplied, its live behaviour remains unverified.
 * HTTP `403`, `451` and other policy responses are classified as **policy blocks**, are not retried,
   and open the provider circuit immediately. `429` honours a capped `Retry-After` and also opens the
   circuit.
-* Downloads use only direct URLs published by the provider; the item licence is stored and shown.
+* Downloads use only direct URLs published by the provider (plus the inline images AI Horde returns);
+  the item licence is stored and shown.
+
+### 2.7 Additional sources (recorded 2026-10-22)
+
+**Wellcome Collection (`wellcome`)**
+
+* Uses the `images` endpoint, so one search request returns one record per usable picture instead of
+  per catalogue work: `GET https://api.wellcomecollection.org/catalogue/v2/images?query=&page=&pageSize=`.
+  No key is required. Requests are spaced by **1 s**.
+* Each record carries `license` (`pdm`, `cc0`, `cc-by`, `inc`, …), a credit line, `averageColor` and a
+  IIIF `info.json` URL. Stockcraft derives `…/full/400,/0/default.jpg` (thumbnail),
+  `…/full/1600,/0/default.jpg` (preview) and `…/full/full/0/default.jpg` (download).
+* `pdm`, `cc0`, `cc-by` and `cc-by-sa` records are downloadable; `inc` records are preview-only and
+  link to the catalogue record. The licence label is shown verbatim in the preview.
+* Live check 2026-10-22: search "sunrise" returned 6 images, all with working `image/jpeg` IIIF
+  thumbnails. (The Art Institute of Chicago remains removed — its IIIF host still returns Cloudflare
+  challenges to non-browser clients.)
+
+**SMK — Statens Museum for Kunst (`smk`)**
+
+* Search: `GET https://api.smk.dk/api/v1/art/search/?keys=&offset=&rows=`; details:
+  `GET https://api.smk.dk/api/v1/art?object_number=…`. No key. Requests are spaced by **1 s**.
+* Only records with `has_image = true` and an `image_thumbnail` are shown. Downloads use
+  `image_native` (an ordinary JPEG, not the archival TIFF) and only when `public_domain = true`;
+  `image_iiif_id` supplies the larger preview.
+* Live check 2026-10-22: search "sunrise" returned 2 public-domain artworks (`KMS445`, `KMSsp867`)
+  with working thumbnails and download URLs.
+
+**The Metropolitan Museum of Art (`met`)**
+
+* `v1.1` search (`/public/collection/v1.1/search?q=&hasImages=true&offset=&limit=`) returns object ids
+  only, so each page follows up with one `/objects/{id}` request per artwork. Those requests are
+  issued concurrently and spaced by **120 ms**; a single failing object is skipped, and if every
+  object fails the first error is propagated.
+* Downloads require `isPublicDomain = true`. Non-public-domain records are preview-only.
+* Live check 2026-10-22: search "sunrise" reported 130 objects; the first page resolved 3 objects with
+  working `images.metmuseum.org` thumbnails in one page load.
+
+**AI Horde (`aihorde`)**
+
+* A **generation** provider, not a search provider. A process-global counter increments on every
+  page-1 search; **only every tenth search** submits a job. Pagination is disabled, so "Load more"
+  never generates.
+* Uses the documented anonymous key `0000000000` with no account. A hard **60 s** minimum interval
+  between generations (1 RPM) is enforced in addition to the ten-search cadence.
+* Jobs are deliberately small and safe: `512×512`, 14 steps, `n = 2`, `nsfw = false`,
+  `censor_nsfw = true`, no model preference, `r2 = false`. Polling runs every 2 s for at most **45 s**;
+  a timeout, fault or transport error yields **no images** rather than a failed search.
+* Finished images arrive as base64 in `/generate/status/{id}`. They are wrapped as
+  `data:image/webp;base64,…` (or PNG/JPEG, detected from the payload) and returned as thumbnails,
+  previews and download URLs. The frontend skips the thumbnail proxy for `data:`/`blob:` URLs, and the
+  download manager decodes inline images locally instead of issuing an HTTP request.
+* Generated results are **never metadata-cached** (forced TTL `0`) because every trigger produces new
+  images. Details for an in-session generated image come from a bounded in-memory map (64 assets);
+  saved favourites keep the full asset in SQLite.
+* Live check 2026-10-22: a probe called `search` ten times; the first nine returned immediately with
+  no assets and the tenth submitted, polled and returned **2 generated WebP images in 33.7 s**.
+
+Both the three museum sources and AI Horde are added to the default enabled list, so the shipped
+default now searches **seven anonymous sources plus the generation source**. Existing installs keep
+their persisted `enabledProviders` list and can enable the new cards in
+**Settings → Sources & policy**.
 
 ---
 
@@ -213,7 +280,7 @@ src/                              Vite + TypeScript frontend (no UI framework)
     api.ts                        typed Tauri IPC bridge
     dom.ts                        html`` escaping template + render helpers
     format.ts                     byte/date/plural formatting, safe filename helpers
-    mock.ts                       browser-only 7-provider mock (4 anonymous + 3 optional keyed)
+    mock.ts                       browser-only mock of the original 7 providers (desktop build is authoritative)
     store.ts                      tiny reactive store
     types.ts                      shared wire types
   styles/
@@ -237,6 +304,10 @@ src-tauri/                        Rust backend: all networking, filesystem and S
       wikimedia.rs
       nasa.rs
       cleveland.rs
+      wellcome.rs                 IIIF images, per-image licence handling
+      smk.rs                      public-domain flag, object_number detail lookup
+      met.rs                      v1.1 search + concurrent /objects/{id} lookups
+      aihorde.rs                  tenth-search generation, 1 RPM, inline data URLs, TTL 0
       pexels.rs                   optional keyed adapter only
       pixabay.rs                  optional keyed adapter; forced 24 h metadata cache
       freepik.rs                  optional keyed, preview-only Magnific adapter
@@ -248,7 +319,7 @@ src-tauri/                        Rust backend: all networking, filesystem and S
     cache/mod.rs                  thumbnail proxy/cache, LRU eviction, metadata TTL helpers
   build.rs                        Windows Common-Controls v6 resource linking for test binaries
   tests/resource_manifest.rs      asserts the v6 manifest is embedded
-tests/frontend.test.ts            19 Vitest + jsdom tests
+tests/frontend.test.ts            20 Vitest + jsdom tests
 assets/                           supplied gorilla source art, legacy SVG mascot, generated app icons
 scripts/                          icon regeneration wrapper (`npm run icons`)
 ```
@@ -290,7 +361,7 @@ Design rules:
 * `[x]` Header: branding, global search field, submit, clear, favourites/collections/downloads/
   settings buttons, theme switch.
 * `[x]` Category navigation renders “All images” plus 12 categories. **Vectors is deliberately
-  disabled** with `n/a` because none of the four anonymous default providers offers vector search.
+  disabled** with `n/a` because none of the anonymous default providers offers vector search.
   The optional keyed Pixabay/Freepik adapters can return vectors, but the fixed category list does not
   yet expose a vector-only view (recorded under limitations).
 * `[x]` Filter/sort semantics are unit-tested: orientation, minimum width/height, media type,
@@ -587,14 +658,14 @@ metadata_cache(
 # frontend
 npm install
 npm run typecheck        # tsc --noEmit
-npm run test             # vitest run (19 tests)
+npm run test             # vitest run (20 tests)
 npm run build            # tsc --noEmit && vite build -> dist/
 npm run icons            # regenerate icons from assets/stockcraft-icon-source.png
 
 # backend (from src-tauri)
 cargo fmt --check
 cargo clippy --all-targets -- -D warnings
-cargo test               # 65 unit + 1 integration, offline-safe
+cargo test               # 80 unit + 1 integration, offline-safe
 
 # run / package
 npm run tauri:dev        # development window
@@ -624,10 +695,10 @@ Environment notes:
 
 | Check | Result |
 | --- | --- |
-| `npm run test` | **19 passed** (1 file) |
+| `npm run test` | **20 passed** (1 file) |
 | `npm run typecheck` | Passed |
 | `npm run build` | Passed |
-| `cargo test` | **65 unit + 1 integration = 66 passed, 0 failed** |
+| `cargo test` | **80 unit + 1 integration = 81 passed, 0 failed** |
 | `cargo fmt --check` | Passed |
 | `cargo clippy --all-targets -- -D warnings` | Passed |
 | Doc-tests | 0 (none defined) |
@@ -797,11 +868,11 @@ Everything in this section was executed and verified during the publishing pass.
 | Check | Result |
 | --- | --- |
 | `npm run typecheck` | **Passed** |
-| `npm test` | **19 passed** (1 file) |
+| `npm test` | **20 passed** (1 file) |
 | `npm run build` | **Passed** (25 modules) |
 | `cargo fmt --check` | **Passed** |
 | `cargo clippy --all-targets -- -D warnings` | **Passed** |
-| `cargo test` | **65 unit + 1 integration = 66 passed, 0 failed** |
+| `cargo test` | **80 unit + 1 integration = 81 passed, 0 failed** |
 | `npm run tauri:build` | **Succeeded** in 3 m 20 s → `Stockcraft_0.1.0_x64-setup.exe` (3.01 MiB) |
 
 The only build diagnostic is the **cosmetic** MinGW linker warning
@@ -850,11 +921,20 @@ Tauri app on Windows.
 
 ### 13.8 Known limitations of this publishing pass
 
-* `[!]` **No CI.** At the owner's instruction no GitHub Actions workflow was added, so the Windows
-  build is not reproducible on a hosted runner. The manual procedure is documented in the README's
-  "Releasing" section. The GitHub runner images do provide MinGW-w64 at `C:\mingw64` with it on the
-  machine `PATH`, which matches the toolchain this project is verified against, so a future workflow
-  can use the same GNU target.
+* `[x]` **CI workflows added** (`.github/workflows/ci.yml` and `release.yml`). Both jobs run on
+  `windows-latest`. The backend job intentionally uses **`stable-x86_64-pc-windows-gnu`** and adds
+  MinGW-w64 (`C:\mingw64\bin`, falling back to `C:\msys64\mingw64\bin`) to `PATH`, because that is the
+  toolchain every local verification used.
+  On MSVC the build fails before the tests run: `build.rs` links the Tauri resource archive into every
+  target so the lib-test harness receives the Common-Controls v6 manifest, while `tauri-build` links
+  the same archive into the binary with `rustc-link-arg-bins`; `CVTRES` rejects the duplicate resource
+  (`CVT1100` → `LNK1123`). MinGW only prints cosmetic duplicate-resource warnings, so the GNU target
+  is both the verified and the practical choice. `rustc-link-arg-tests` was tried and does **not**
+  reach the lib unit-test harness (`STATUS_ENTRYPOINT_NOT_FOUND`), which is why the blanket link-arg
+  remains.
+* `[-]` The workflows have not yet been observed green on a hosted runner at the time of writing;
+  the local equivalents (`cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`,
+  `cargo test`, `npm run typecheck`, `npm test`, `npm run build`) are green on GNU.
 * `[x]` Everything else in the publishing checklist is complete: repository created and public, README
   written, licence added, screenshots organised, release configuration verified, production build
   run, tests and lints run, artefacts verified, install/uninstall tested, release published with
@@ -875,3 +955,4 @@ Tauri app on Windows.
 | 2026-10-21 | Icon + provider expansion | Supplied cross-hatched gorilla artwork replaced the procedural icon across Windows/macOS/iOS/Android output. Added optional keyed Pixabay and Freepik/Magnific adapters; Freepik is preview-only. Google Images and Freepik public pages documented as excluded after robots/API checks. |
 | 2026-10-21 | Re-verification | 65 unit + 1 integration Rust tests and 19 frontend tests passed; release search “sunrise” returned 81 results from 4 sources; current NSIS installer (with gorilla setup/uninstaller icon) installed, launched with the new icon, and uninstalled cleanly. Live keyed providers remain untested. |
 | 2026-10-21 | Publishing pass | Git initialised; public repository `gggff123/Stockcraft` created; `README.md` written; MIT `LICENSE` added; screenshots reorganised into `docs/screenshots/` (+ `legacy/`); `.gitignore` extended and `src-tauri/gen/schemas/` untracked; production build re-run (3 m 20 s); all tests/lints re-run green; live search re-verified (81 results, 4 sources); installer install → launch → uninstall cycle re-verified; bare exe confirmed **not** portable (`STATUS_DLL_NOT_FOUND` without `WebView2Loader.dll`) so no portable artefact was published; release `v0.1.0` created with the NSIS installer and a SHA-256 checksum file; source pushed to `main`. No CI workflow, at the owner's instruction. |
+| 2026-10-22 | Provider expansion | Added Wellcome Collection (IIIF images, per-image licence), SMK (public-domain flag) and The Met (v1.1 search + concurrent object lookups) as anonymous sources. Added AI Horde as an anonymous generation source that runs on every tenth search, at most once per minute, with a 45 s timeout and inline `data:` results. Frontend proxy bypasses `data:`/`blob:` URLs; the download manager decodes inline images. Live probes: Wellcome 6/6, SMK 2/2, Met 3/3 thumbnails; AI Horde generated 2 images in 33.7 s on the tenth call. Rust tests 80 + 1 integration, frontend 20, clippy/fmt/typecheck green. |
