@@ -932,9 +932,12 @@ Tauri app on Windows.
   is both the verified and the practical choice. `rustc-link-arg-tests` was tried and does **not**
   reach the lib unit-test harness (`STATUS_ENTRYPOINT_NOT_FOUND`), which is why the blanket link-arg
   remains.
-* `[-]` The workflows have not yet been observed green on a hosted runner at the time of writing;
-  the local equivalents (`cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`,
-  `cargo test`, `npm run typecheck`, `npm test`, `npm run build`) are green on GNU.
+* `[x]` **The workflows are green on a hosted runner.** CI run
+  [`39727594930`](https://github.com/gggff123/Stockcraft/actions/runs/39727594930) passed both jobs on
+  `windows-latest`: backend (fmt, clippy, 80 unit + 1 integration tests) in 5 m 31 s and frontend
+  (typecheck, 20 tests, production build) in 36 s. The MinGW step found `C:\mingw64\bin`.
+* `[x]` The local equivalents (`cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`,
+  `cargo test`, `npm run typecheck`, `npm test`, `npm run build`) are also green on GNU.
 * `[x]` Everything else in the publishing checklist is complete: repository created and public, README
   written, licence added, screenshots organised, release configuration verified, production build
   run, tests and lints run, artefacts verified, install/uninstall tested, release published with
