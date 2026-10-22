@@ -944,6 +944,29 @@ Tauri app on Windows.
   run, tests and lints run, artefacts verified, install/uninstall tested, release published with
   checksums, and the source pushed to `main`.
 
+### 13.9 Release v1.0.1 (2026-10-22)
+
+| Item | Value |
+| --- | --- |
+| Tag | **`v1.0.1`** |
+| Release | <https://github.com/gggff123/Stockcraft/releases/tag/v1.0.1> |
+| Release workflow | [run `39729210491`](https://github.com/gggff123/Stockcraft/actions/runs/39729210491) - **success** in 10 m 55 s |
+| Installer | `Stockcraft_1.0.1_x64-setup.exe` - **3,370,027 bytes** |
+| SHA-256 | `1b73f1138a577aa8c3e3192fb7e97686c4d5e5517d89338b3837c702bb2625f2` |
+| Checksum asset | `SHA256SUMS.txt` (98 bytes, one line) |
+| Installer metadata | `ProductName = Stockcraft`, `ProductVersion = 1.0.1`, `FileVersion = 1.0.1` |
+| Contents | PR #1: Wellcome Collection, SMK, The Met and AI Horde, plus the multi-size icon |
+| Source state | `main` at `9cff379` (`chore(release): v1.0.1`) |
+
+The published installer was downloaded again, its SHA-256 matched `SHA256SUMS.txt`, and its Windows
+version resource reported 1.0.1. Install → launch → uninstall was exercised with the 0.1.0 installer
+built from the same NSIS recipe; the 1.0.1 installer itself was not installed on the verification
+machine, and no live search was run against the packaged 1.0.1 build (the same code passed the live
+provider probes from the source tree).
+
+The checksum asset name changed with the workflow: it is now a single `SHA256SUMS.txt` instead of a
+per-installer `.sha256` file. The README install instructions were updated to match.
+
 ---
 
 ## Development log
@@ -960,4 +983,4 @@ Tauri app on Windows.
 | 2026-10-21 | Re-verification | 65 unit + 1 integration Rust tests and 19 frontend tests passed; release search “sunrise” returned 81 results from 4 sources; current NSIS installer (with gorilla setup/uninstaller icon) installed, launched with the new icon, and uninstalled cleanly. Live keyed providers remain untested. |
 | 2026-10-21 | Publishing pass | Git initialised; public repository `gggff123/Stockcraft` created; `README.md` written; MIT `LICENSE` added; screenshots reorganised into `docs/screenshots/` (+ `legacy/`); `.gitignore` extended and `src-tauri/gen/schemas/` untracked; production build re-run (3 m 20 s); all tests/lints re-run green; live search re-verified (81 results, 4 sources); installer install → launch → uninstall cycle re-verified; bare exe confirmed **not** portable (`STATUS_DLL_NOT_FOUND` without `WebView2Loader.dll`) so no portable artefact was published; release `v0.1.0` created with the NSIS installer and a SHA-256 checksum file; source pushed to `main`. No CI workflow, at the owner's instruction. |
 | 2026-10-22 | Provider expansion | Added Wellcome Collection (IIIF images, per-image licence), SMK (public-domain flag) and The Met (v1.1 search + concurrent object lookups) as anonymous sources. Added AI Horde as an anonymous generation source that runs on every tenth search, at most once per minute, with a 45 s timeout and inline `data:` results. Frontend proxy bypasses `data:`/`blob:` URLs; the download manager decodes inline images. Live probes: Wellcome 6/6, SMK 2/2, Met 3/3 thumbnails; AI Horde generated 2 images in 33.7 s on the tenth call. Rust tests 80 + 1 integration, frontend 20, clippy/fmt/typecheck green. |
-| 2026-10-22 | Release v1.0.1 | Merged PR #1 (new sources + multi-size icon) and bumped `package.json`, `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml` and `Cargo.lock` from 0.1.0 to **1.0.1**. Tag `v1.0.1` builds and publishes the NSIS installer through the release workflow. |
+| 2026-10-22 | Release v1.0.1 | Merged PR #1 (new sources + multi-size icon) and bumped `package.json`, `package-lock.json`, `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml` and `Cargo.lock` from 0.1.0 to **1.0.1**. Tag `v1.0.1` built and published the NSIS installer through the release workflow: 3,370,027 bytes, SHA-256 `1b73f113…2625f2`, `ProductVersion = 1.0.1`; the published file was re-downloaded and its hash matched `SHA256SUMS.txt`. |

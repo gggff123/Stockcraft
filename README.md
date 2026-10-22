@@ -155,7 +155,7 @@ From the [latest release page](https://github.com/gggff123/Stockcraft/releases/l
 | Asset | What it is |
 |---|---|
 | `Stockcraft_1.0.1_x64-setup.exe` | The **NSIS installer**. This is the supported way to install Stockcraft. |
-| `Stockcraft_1.0.1_x64-setup.exe.sha256` | SHA-256 checksum of the installer, for verifying the download. |
+| `SHA256SUMS.txt` | SHA-256 checksum of the installer (and every other published asset). |
 
 ### 2. Verify the download (recommended)
 
@@ -164,8 +164,8 @@ From the [latest release page](https://github.com/gggff123/Stockcraft/releases/l
 Get-FileHash .\Stockcraft_1.0.1_x64-setup.exe -Algorithm SHA256
 ```
 
-Compare the printed hash with the one in the `.sha256` file. They must match exactly. The same hash is
-printed in the release notes.
+Compare the printed hash with the `Stockcraft_1.0.1_x64-setup.exe` line in `SHA256SUMS.txt`. They must
+match exactly. The same hash is printed in the release notes.
 
 ### 3. Install
 
@@ -199,7 +199,7 @@ so Windows SmartScreen will show a **"Windows protected your PC"** warning for t
 some antivirus products may flag an unfamiliar unsigned installer.
 
 This is a known, expected consequence of an unsigned release — not evidence of a problem with the file.
-To verify the download independently, compare the SHA-256 hash against the published `.sha256` file as
+To verify the download independently, compare the SHA-256 hash against `SHA256SUMS.txt` as
 described in step 2, and download only from the official
 [GitHub release page](https://github.com/gggff123/Stockcraft/releases/latest).
 
@@ -633,21 +633,19 @@ cargo clippy --all-targets -- -D warnings
 cargo test
 cd ..
 
-# 2. Build the production bundle
+# 2. (Optional) build locally to check the bundle
 npm run tauri:build
 
-# 3. Locate and checksum the artefacts
-$installer = "src-tauri\target\release\bundle\nsis\Stockcraft_1.0.1_x64-setup.exe"
-Get-FileHash $installer -Algorithm SHA256
-
-# 4. Create the tag and the release
+# 3. Tag and push; the Release workflow performs the official build, checksums and publishing
 git tag -a v1.0.1 -m "Stockcraft 1.0.1"
-git push origin main --tags
-gh release create v1.0.1 $installer "$installer.sha256" --title "Stockcraft 1.0.1" --notes-file notes.md
+git push origin main
+git push origin v1.0.1
 ```
 
-The version is kept in sync in four places: `package.json`, `src-tauri/Cargo.toml`,
-`src-tauri/tauri.conf.json` and `feat.md`.
+The tag must match the application version. The version is kept in sync in `package.json`,
+`package-lock.json`, `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml` and `src-tauri/Cargo.lock`;
+the Release workflow refuses to publish when they disagree, then uploads the NSIS installer and
+`SHA256SUMS.txt` to the release.
 
 ---
 
